@@ -2,7 +2,7 @@ package com.jacoffee.codebase.zookeeper;
 
 import static org.apache.zookeeper.ZooDefs.Ids.OPEN_ACL_UNSAFE;
 
-import com.clearspring.analytics.util.Lists;
+import com.google.common.collect.Lists;
 import com.google.common.collect.Maps;
 import org.apache.zookeeper.CreateMode;
 import org.apache.zookeeper.KeeperException;
