@@ -76,19 +76,16 @@ object KafkaWordCounter {
 
   private def snapShotOutput(kafkaDirectStream: DStream[(String, Int)]) {
     val sc = kafkaDirectStream.context.sparkContext
-    val snapShotStream =
-      kafkaDirectStream.mapWithState(
-        StateSpec.function(mappingFunction _).initialState(getInitialState(sc))
-      ).stateSnapshots()
-
-    snapShotStream.foreachRDD { (stateRDD, time) =>
-      // SparkUtils.periodicSnapShotDump(stateRDD, time)
-      stateRDD.collect().foreach {
-        case (word, count) =>
-          println(s"Word ${word}, count ${count}")
+    kafkaDirectStream.foreachStateRDD[Int, (String, Int)](
+      StateSpec.function(mappingFunction _).initialState(getInitialState(sc)),
+      (mappedData, time) => {
+        mappedData.collect().foreach {
+          case (word, count) =>
+            println(s"Word ${word}, count ${count}")
+        }
+        println("---------------------")
       }
-      println(" --------------------------- ")
-    }
+    )
   }
 
   def main(args: Array[String]): Unit = {
@@ -115,13 +112,7 @@ object KafkaWordCounter {
         case (k, v) => (v, 1)
       }
 
-    kafkaDirectStream.foreachStateRDD[Int, (String, Int)](
-      StateSpec.function(mappingFunction _).initialState(getInitialState(sparkContext)),
-      (mappedData, time) => mappedData.collect().foreach {
-        case (word, count) => println(s"Word ${word}, count ${count}")
-      }
-    )
-
+    snapShotOutput(kafkaDirectStream)
     ssc.start()
     ssc.awaitTermination()
   }
