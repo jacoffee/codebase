@@ -47,9 +47,6 @@ object SparkUtils {
         rdd.repartition(partitionNumber).saveAsObjectFile(snapShotDir)
       }
     }
-
-    // save at every five duration
-
   }
 
   def cleanCheckpoint(sc: SparkContext, dir: String) = {
