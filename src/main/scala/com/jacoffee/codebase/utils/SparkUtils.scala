@@ -22,7 +22,7 @@ object SparkUtils {
   val DURATION = "spark.streaming.duration"
   val STATE_SNAPSHOT_CP_DURATION = "spark.streaming.snapshot.duration"
   val STATE_SNAPSHOT_PARTITION = "spark.streaming.snapshot.partition"
-  val DEFAULT_CHECKPOINT_DURATION_MULTIPLIER = 5
+  val DEFAULT_STATE_SNAPSHOT_PARTITION = 5
 
   implicit def scalaDurationToSparkDuration(duration: ScalaDuration): Duration = Duration(duration.toMillis)
 
@@ -39,7 +39,7 @@ object SparkUtils {
       snapShotDir <- sparkConf.getOption(STATE_SNAPSHOT_DIR)
       snapShotDuration <- sparkConf.getOption(STATE_SNAPSHOT_CP_DURATION)
     } yield {
-      val partitionNumber = sparkConf.getInt(STATE_SNAPSHOT_PARTITION, DEFAULT_CHECKPOINT_DURATION_MULTIPLIER)
+      val partitionNumber = sparkConf.getInt(STATE_SNAPSHOT_PARTITION, DEFAULT_STATE_SNAPSHOT_PARTITION)
 
       if (currentTime != startTime && (currentTime - startTime) % ScalaDuration(snapShotDuration).toMillis == 0) {
         cleanCheckpoint(rdd.context, snapShotDir)
