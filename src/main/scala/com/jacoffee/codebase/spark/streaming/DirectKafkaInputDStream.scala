@@ -13,27 +13,29 @@ import org.apache.curator.utils.CloseableUtils
 import org.apache.hadoop.fs.Path
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
-import org.apache.spark.streaming.{Time, StreamingContext}
+import org.apache.spark.streaming.{StateSpec, Time, StreamingContext}
 import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaUtils, OffsetRange}
-import kafka.serializer.StringDecoder
+import kafka.serializer.{Decoder, StringDecoder}
 import org.slf4j.LoggerFactory
 import com.jacoffee.codebase.spark.utils.SparkUtils._
 
 import scala.collection.JavaConversions.iterableAsScalaIterable
 import scala.concurrent.duration.Duration
+import scala.reflect.ClassTag
 import scala.util.{Failure, Success}
 
 /**
   * + DirectKafkaStream with offset submit support
-  * + ZK offset submit is done via apache curator (client library for Zookeeper)
+  * + zookeeper offset submit is done via apache curator (client library for Zookeeper)
+  * + remember the outer class DirectKafkaInputDStream should not be Serializable
 */
-class DirectKafkaInputDStream(
+class DirectKafkaInputDStream[K: ClassTag, V: ClassTag, KD <: Decoder[K]: ClassTag, VD <: Decoder[V]: ClassTag](
   ssc: StreamingContext, topic: String, kafkaParams: Map[String, String]
 ) extends Serializable {
 
   private val logger = LoggerFactory.getLogger(getClass.getName.stripSuffix("$"))
 
-  // state update may be a issue, can not incorporate with the offset submit
+  // commit offset at every interval
   def build() = {
     require(kafkaParams.contains("group.id"), "Consumer group id should not be empty")
     require(kafkaParams.contains("zookeeper.connect"), "Zookeeper connect should not be empty")
@@ -50,13 +52,13 @@ class DirectKafkaInputDStream(
           // try to get from offset from zookeeper or create a new one
           val directKafkaInputDStream =
             if (storedFromOffsets.nonEmpty) {
-              val messageHandler = (mmd: MessageAndMetadata[String, String]) => (mmd.key, mmd.message)
-              KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder, (String, String)](
+              val messageHandler = (mmd: MessageAndMetadata[K, V]) => (mmd.key, mmd.message)
+              KafkaUtils.createDirectStream[K, V, KD, VD, (K, V)](
                 ssc, kafkaParams, storedFromOffsets, messageHandler
               )
             } else {
               logger.info(s"Create direct stream with topics: ${topic}")
-              KafkaUtils.createDirectStream[String, String, StringDecoder, StringDecoder](ssc, kafkaParams, Set(topic))
+              KafkaUtils.createDirectStream[K, V, KD, VD](ssc, kafkaParams, Set(topic))
             }
 
           directKafkaInputDStream
@@ -66,6 +68,7 @@ class DirectKafkaInputDStream(
       }
 
     directKafkaInputDStream.foreachRDD { (rdd, time) =>
+
       val zkClient = ZookeeperClient.connect(zkConnect)
       CommonUtils.safeRelease(zkClient)(
         _.commitFromOffset(consumerGroupId, rdd.asInstanceOf[HasOffsetRanges].offsetRanges)
@@ -80,8 +83,11 @@ class DirectKafkaInputDStream(
 
 object DirectKafkaInputDStream {
 
-  def build(ssc: StreamingContext, topic: String, kafkaParams: Map[String, String]) = {
-    new DirectKafkaInputDStream(ssc, topic, kafkaParams).build()
+  def create(ssc: StreamingContext, topic: String, kafkaParams: Map[String, String]) = {
+    new DirectKafkaInputDStream[String, String, StringDecoder, StringDecoder](ssc, topic, kafkaParams).build()
   }
+
+
+
 
 }

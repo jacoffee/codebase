@@ -1,23 +1,22 @@
 package com.jacoffee.codebase.spark.streaming.stateful
 
-import com.jacoffee.codebase.spark.streaming.DirectKafkaInputDStream
-import com.jacoffee.codebase.spark.utils.SparkUtils
 import org.apache.hadoop.fs.Path
 import org.apache.spark.rdd.RDD
 import org.apache.spark.{SparkContext, SparkConf}
 import org.apache.spark.streaming.dstream.DStream
 import org.apache.spark.streaming.{State, StateSpec, Time, StreamingContext}
 import com.jacoffee.codebase.spark.utils.SparkUtils._
-
+import com.jacoffee.codebase.spark.streaming.DirectKafkaInputDStream
 import scala.concurrent.duration.Duration
 
 object KafkaWordCounter {
 
   private def buildSparkConf() = {
     val sparkConf = new SparkConf()
+    sparkConf.set(DURATION, "10s")
     sparkConf.set(CP_DIR, "hdfs://localhost/user/allen/streaming/wordcount")
     sparkConf.set(STATE_SNAPSHOT_DIR, "hdfs://localhost/user/allen/streaming/wordcount-snapshot")
-    sparkConf.set(DURATION, "10s")
+    sparkConf.set(STATE_SNAPSHOT_CP_DURATION, "50s")
     sparkConf.set("spark.streaming.stopGracefullyOnShutdown", "true")
     sparkConf.setAppName("Kafka Word Count")
     sparkConf.setMaster("local[*]")
@@ -83,7 +82,7 @@ object KafkaWordCounter {
       ).stateSnapshots()
 
     snapShotStream.foreachRDD { (stateRDD, time) =>
-      SparkUtils.periodicSnapShotDump(stateRDD, time)
+      // SparkUtils.periodicSnapShotDump(stateRDD, time)
       stateRDD.collect().foreach {
         case (word, count) =>
           println(s"Word ${word}, count ${count}")
@@ -109,17 +108,23 @@ object KafkaWordCounter {
     // DO create new one every time we start
     val sparkContext = new SparkContext(sparkConf)
     val ssc = new StreamingContext(sparkContext, Duration(sparkConf.get(DURATION)))
-
     cleanCheckpoint(sparkContext, sparkConf.get(CP_DIR))
 
     val kafkaDirectStream =
-      DirectKafkaInputDStream.build(ssc, "kafka-word-count", kafkaParams).map {
+      DirectKafkaInputDStream.create(ssc, "kafka-word-count", kafkaParams).map {
         case (k, v) => (v, 1)
       }
-    snapShotOutput(kafkaDirectStream)
+
+    kafkaDirectStream.foreachStateRDD[Int, (String, Int)](
+      StateSpec.function(mappingFunction _).initialState(getInitialState(sparkContext)),
+      (mappedData, time) => mappedData.collect().foreach {
+        case (word, count) => println(s"Word ${word}, count ${count}")
+      }
+    )
 
     ssc.start()
     ssc.awaitTermination()
   }
 
 }
+// scalastyle:on

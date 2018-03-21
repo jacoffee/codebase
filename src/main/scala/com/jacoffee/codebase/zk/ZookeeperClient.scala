@@ -14,7 +14,7 @@ class ZookeeperClient private (val client: CuratorFramework) extends AutoCloseab
 
   private val logger = LoggerFactory.getLogger(getClass.getName.stripSuffix("$"))
 
-  // invoke before stream really starts
+  // Attention: offsetRange.fromOffset
   def commitFromOffset(consumerGroupId: String, offsetRanges: Array[OffsetRange]): Unit = {
     require(StringUtils.isNoneBlank(consumerGroupId), "Consumer group id should not be empty")
 
@@ -73,7 +73,7 @@ class ZookeeperClient private (val client: CuratorFramework) extends AutoCloseab
   }
 
   def close(): Unit = {
-    logger.info("Zookeeper is closing")
+    logger.info("ZookeeperClient is closing")
     CloseableUtils.closeQuietly(client)
   }
 
@@ -84,9 +84,9 @@ object ZookeeperClient {
   private val logger = LoggerFactory.getLogger(getClass.getName.stripSuffix("$"))
 
   def connect(connectString: String) = {
-    logger.info("Initializing CuratorFramework")
+    logger.info("Initializing zookeeperClient")
     val retryPolicy = new ExponentialBackoffRetry(1000, 3)
-    val client = CuratorFrameworkFactory.newClient("localhost:2181", retryPolicy)
+    val client = CuratorFrameworkFactory.newClient(connectString, retryPolicy)
     client.start()
     new ZookeeperClient(client)
   }
