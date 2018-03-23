@@ -97,6 +97,12 @@
             <artifactId>joda-time</artifactId>
             <version>2.9.4</version>
         </dependency>
+        <!-- compatible with server RabbitMQ 3.7.4  -->
+        <dependency>
+            <groupId>com.rabbitmq</groupId>
+            <artifactId>amqp-client</artifactId>
+            <version>4.1.0</version>
+        </dependency>
     </dependencies>
 
     <build>
