@@ -18,13 +18,13 @@ public class RabbitMQProducerTest {
     configs.put("password", "guest");
     configs.put("host", "localhost");
     configs.put("port", "5672");
+    configs.put("virtualHost", "/");
 
     RabbitMQProducer producer = new RabbitMQProducer(configs);
 
-
     producer.batchSend(
         QUEUE_NAME,
-        Lists.newArrayList("1 Never Lost", "2 Never Lost").stream().map(str -> str.getBytes()).iterator()
+        Lists.newArrayList("3 Never Lost", "4 Never Lost").stream().map(str -> str.getBytes()).iterator()
     );
     producer.close();
   }
