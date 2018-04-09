@@ -24,8 +24,7 @@ public class RabbitMQConsumerTest {
   }
 
   public static void push(Map<String, String> configs) throws IOException, TimeoutException {
-    RabbitMQConsumer consumer = null;
-    consumer = new RabbitMQConsumer(configs);
+    RabbitMQConsumer consumer = new RabbitMQConsumer(configs);
     consumer.batchConsume(QUEUE_NAME, "user_invocation_consumer");
   }
 
