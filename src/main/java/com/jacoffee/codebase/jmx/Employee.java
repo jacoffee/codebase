@@ -1,5 +1,6 @@
 package com.jacoffee.codebase.jmx;
 
+// every standard mbean must implement a interface which normally ends with MBean
 public class Employee implements EmployeeMBean {
 
   // Attribute of MBean
