@@ -10,7 +10,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 
 // cat cleanup.txt | nc localhost 20000
-public class SimpleServerSocket {
+public class SimpleServer {
 
   private static ExecutorService pool = Executors.newFixedThreadPool(5);
 

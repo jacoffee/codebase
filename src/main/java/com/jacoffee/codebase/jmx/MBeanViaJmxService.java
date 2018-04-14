@@ -48,6 +48,11 @@ public class MBeanViaJmxService {
     Object underReplicatedTopicPartitionCount =
       connection.getAttribute(new ObjectName(underReplicatedTopicPartition), "Value");
     System.out.println(underReplicatedTopicPartitionCount);
+
+    Object logEndOffset =
+      connection.getAttribute(new ObjectName("kafka.log:type=Log,name=LogEndOffset,topic=message,partition=1"), "Value");
+
+    System.out.println(logEndOffset);
   }
 
 }
