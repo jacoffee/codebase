@@ -1,8 +1,8 @@
 package com.jacoffee.codebase.spark.utils
 
+import com.google.common.base.Stopwatch
 import org.joda.time.DateTime
 import org.apache.hadoop.fs.Path
-import com.google.common.base.Stopwatch
 import java.util.concurrent.TimeUnit
 import org.apache.spark.SparkContext
 import org.apache.spark.rdd.RDD
@@ -75,7 +75,7 @@ object SparkUtils {
         }
         periodicSnapShotDump(rdd, zeroTime.milliseconds, time.milliseconds)
 
-        val stopwatch = new Stopwatch().start()
+        val stopwatch = Stopwatch.createStarted();
         rddHandler(rdd, time)
         stopwatch.stop()
         val millis = stopwatch.elapsed(TimeUnit.MILLISECONDS)

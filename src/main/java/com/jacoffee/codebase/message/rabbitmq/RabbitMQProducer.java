@@ -24,7 +24,7 @@ public class RabbitMQProducer extends AbstractChannel {
     channel.confirmSelect();
 
     int count = 0;
-    Stopwatch stopwatch = new Stopwatch().start();
+    Stopwatch stopwatch = Stopwatch.createStarted();
     while (payloadIter.hasNext()) {
       byte[] payload = payloadIter.next();
       channel.basicPublish("", queueName, MessageProperties.PERSISTENT_TEXT_PLAIN, payload);
